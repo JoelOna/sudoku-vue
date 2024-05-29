@@ -8,33 +8,48 @@
         <tr v-for="(row, rowIndex) in board" :key="rowIndex">
           <td v-for="(cell, colIndex) in row" :key="colIndex" :class="getClass(rowIndex, colIndex)">
             <input 
-              type="text" 
-              maxlength="1"
-              v-model="board[rowIndex][colIndex].value" 
-              :class="board[rowIndex][colIndex].class"
-              :disabled = "board[rowIndex][colIndex].class == 'default' ? true : false "
-              @click="startTime"
+            type="text" 
+            maxlength="1"
+            v-model="board[rowIndex][colIndex].value" 
+            :class="board[rowIndex][colIndex].class"
+            :disabled = "board[rowIndex][colIndex].class == 'default' ? true : false "
+            @click="startTime"
             />
           </td>
         </tr>
       </tbody>
     </table>
+    <ConfettiExplosion v-if="visible"/>
   </div>
-  <button>Check Sudoku</button>
+  <button @click="checkGame">Check Sudoku</button>
   <button @click="startTime">Start</button>
   <button @click="stopTimer">Stop</button>
+  <button @click="explode">Show confetti</button>
+  <div>
+    <p v-if="gameWin == 'win'">Win</p>
+    <p v-if="gameWin == 'lose'">Lose</p>
+  </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
+import ConfettiExplosion from "vue-confetti-explosion";
 
 const createBoard = () => {
-  return Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => ({ value: '', class: '' })))
+  return Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => ({ value: null, class: '' })))
 }
 
 const board = ref(createBoard())
 let time = ref(null)
 let timerInterval = null
+const visible = ref(false)
+const gameWin = ref()
+
+const explode = async () => {
+    visible.value = false;
+    await nextTick();
+    visible.value = true;
+  };
 
 onMounted(() => {
   fillBoard()
@@ -70,10 +85,9 @@ const fillBoard = () => {
 }
 
 const getClass = (rowIndex, colIndex) => {
-  let classes = [board.value[rowIndex][colIndex].class]
-  if ((colIndex + 1) % 3 === 0 && colIndex !== 8) classes.push('right-border')
-  if ((rowIndex + 1) % 3 === 0 && rowIndex !== 8) classes.push('bottom-border')
-  return classes.join(' ')
+  if ((rowIndex + 1) % 3 === 0 && (colIndex + 1) % 3 === 0 && rowIndex !== 8 && colIndex !== 8) return 'bottom-border right-border'
+  if ((colIndex + 1) % 3 === 0 && colIndex !== 8) return 'right-border'
+  if ((rowIndex + 1) % 3 === 0 && rowIndex !== 8) return 'bottom-border'
 }
 
 const duplicateRowCol = (rowIndex, colIndex, value) => {
@@ -92,12 +106,43 @@ const duplicateRowCol = (rowIndex, colIndex, value) => {
   }
   return false
 }
-// const duplicateSquare = (rowIndex, colIndex, value)=> {
-//   for (let i = 0; i < 9; i++) {
-    
-    
-//   }
-// }
+const checkSquare = (rowIndex, colIndex)=> {
+  console.log(rowIndex,colIndex)
+  rowIndex = Math.floor(rowIndex / 3) * 3;
+  colIndex = Math.floor(colIndex / 3) * 3;
+  let isValid = true
+  const numbers = new Set()
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 3; j++) {
+      const value = board.value[rowIndex+i][colIndex+j].value
+      if (value < 1 || value > 9) {
+        isValid = false
+      }
+
+      if (numbers.has(value)) {
+        isValid =  false
+      }
+
+      if (value !== 0) {
+        numbers.add(value)
+      }
+    }
+  }
+  return isValid
+}
+
+const checkGame = () => {
+  for (let row = 0; row < 9; row++) {
+    for (let col = 0; col < 9; col++) {
+      if (duplicateRowCol(row, col, board.value[row][col].value) || !checkSquare(row, col)) {
+        gameWin.value = 'lose'
+        return
+      }
+    }
+  }
+  gameWin.value = 'win'
+}
+
 </script>
 
 <style scoped>
