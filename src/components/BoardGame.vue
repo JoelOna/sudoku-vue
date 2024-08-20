@@ -19,21 +19,22 @@
         </tr>
       </tbody>
     </table>
-    <ConfettiExplosion v-if="visible"/>
   </div>
-  <button @click="checkGame">Check Sudoku</button>
-  <button @click="startTime">Start</button>
-  <button @click="stopTimer">Stop</button>
-  <button @click="explode">Show confetti</button>
+  <section class="buttons">
+    <button @click="checkGame">Check Sudoku</button>
+    <button @click="startTime">Start</button>
+    <button @click="stopTimer">Stop</button>
+    <button @click="restart">Restart</button>
+
+  </section>
   <div>
-    <p v-if="gameWin == 'win'">Win</p>
-    <p v-if="gameWin == 'lose'">Lose</p>
+    <p v-if="gameWin == 'win'" style="color: green;">Win</p>
+    <p v-if="gameWin == 'lose'" style="color:red;">Lose</p>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed, nextTick } from 'vue'
-import ConfettiExplosion from "vue-confetti-explosion";
+import { ref, onMounted, computed } from 'vue'
 
 const createBoard = () => {
   return Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => ({ value: null, class: '' })))
@@ -42,24 +43,33 @@ const createBoard = () => {
 const board = ref(createBoard())
 let time = ref(null)
 let timerInterval = null
-const visible = ref(false)
 const gameWin = ref()
 
-const explode = async () => {
-    visible.value = false;
-    await nextTick();
-    visible.value = true;
-  };
 
 onMounted(() => {
   fillBoard()
 })
+const restart = () => {
+   board.value.forEach((row, rowIndex) => {
+    row.forEach((cell, colIndex) => {
+      board.value[rowIndex][colIndex] = { value: null, class: '' }
+    })
+  })
+  // Rellenar nuevamente el tablero
+  fillBoard()
+
+  // Reiniciar el tiempo
+  time.value = 0
+  stopTimer()
+}
+// Formatear el tiempo
 const formattedTime = computed(() => {
   const minutes = Math.floor(time.value / 60)
   const seconds = time.value % 60
   return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
 })
 
+//Empezar el tiempo
 const startTime = () => {
   if (timerInterval) {
     clearInterval(timerInterval)
@@ -69,10 +79,12 @@ const startTime = () => {
     time.value++
   }, 1000)
 }
+//Para el tiempo
 const stopTimer = () => {
   clearInterval(timerInterval)
 }
 
+//Rellenar el tablero
 const fillBoard = () => {
   for (let i = 0; i < 20; i++) {
     const randomCol = Math.floor(Math.random() * 9)
@@ -84,12 +96,14 @@ const fillBoard = () => {
   }
 }
 
+//Obtener la clase para añdadir los bordes en el tablero
 const getClass = (rowIndex, colIndex) => {
   if ((rowIndex + 1) % 3 === 0 && (colIndex + 1) % 3 === 0 && rowIndex !== 8 && colIndex !== 8) return 'bottom-border right-border'
   if ((colIndex + 1) % 3 === 0 && colIndex !== 8) return 'right-border'
   if ((rowIndex + 1) % 3 === 0 && rowIndex !== 8) return 'bottom-border'
 }
 
+// Verificar fuplicados
 const duplicateRowCol = (rowIndex, colIndex, value) => {
   // Verificar duplicados en la fila
   for (let i = 0; i < 9; i++) {
@@ -106,6 +120,7 @@ const duplicateRowCol = (rowIndex, colIndex, value) => {
   }
   return false
 }
+// Comprobar cuadrado
 const checkSquare = (rowIndex, colIndex)=> {
   console.log(rowIndex,colIndex)
   rowIndex = Math.floor(rowIndex / 3) * 3;
@@ -130,7 +145,7 @@ const checkSquare = (rowIndex, colIndex)=> {
   }
   return isValid
 }
-
+// Comprobar el juego
 const checkGame = () => {
   for (let row = 0; row < 9; row++) {
     for (let col = 0; col < 9; col++) {
@@ -180,6 +195,29 @@ input {
 }
 .default{
   font-weight: 700;
-  color: black;
+}
+.buttons{
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+.buttons button{
+  border-radius: 0.2rem;
+  border: 1px solid #d5d7dd;
+  padding:4px 6px;
+  background-color: #d5d7dd;
+  transition: all;
+}
+.buttons button:hover{
+  cursor:pointer;
+  background-color: #a9afc0;
+  border-color: #a9afc0;
+  transition: all;
+}
+.buttons button:active {
+  transform: translateY(4px);
+  transition: all;
 }
 </style>
